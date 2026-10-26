@@ -26,6 +26,7 @@ jobs:
           test -f star_isle/pubspec.yaml
           chmod +x star_isle/android/gradlew
           sed -i 's/compileSdk = 34/compileSdk = 35/' star_isle/android/app/build.gradle
+          sed -i '/postSplashScreenTheme/d' star_isle/android/app/src/main/res/values-v31/styles.xml star_isle/android/app/src/main/res/values-night-v31/styles.xml
           if ! grep -q 'suppressUnsupportedCompileSdk' star_isle/android/gradle.properties; then
             echo 'android.suppressUnsupportedCompileSdk=35' >> star_isle/android/gradle.properties
           fi
