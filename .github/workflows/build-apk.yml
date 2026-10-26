@@ -1,0 +1,77 @@
+yaml
+
+name: Build Star Isle APK
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-apk:
+    name: Flutter Release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Android SDK 34
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
+      - name: Set up Flutter 3.24.5
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+          cache: true
+      - name: Locate project and unzip source
+        id: locate
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f "StarIsle_Flutter_Android_Source.zip" ]; then
+            echo "Found source zip, extracting..."
+            unzip -q -o "StarIsle_Flutter_Android_Source.zip" -d .
+          fi
+          PUBSPEC=$(find . -maxdepth 4 -name pubspec.yaml -not -path './.git/*' -print -quit)
+          if [ -z "$PUBSPEC" ]; then
+            echo "::error::pubspec.yaml not found. Upload StarIsle_Flutter_Android_Source.zip to the repository root."
+            exit 1
+          fi
+          PROJECT_DIR=$(dirname "$PUBSPEC")
+          echo "project_dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
+          echo "Using project directory: $PROJECT_DIR"
+          if [ -f "$PROJECT_DIR/android/gradlew" ]; then
+            chmod +x "$PROJECT_DIR/android/gradlew"
+          fi
+      - name: Resolve Flutter dependencies
+        working-directory: ${{ steps.locate.outputs.project_dir }}
+        run: |
+          flutter config --no-analytics
+          flutter pub get
+      - name: Flutter doctor (diagnostics)
+        run: flutter doctor -v || true
+      - name: Build release APK
+        working-directory: ${{ steps.locate.outputs.project_dir }}
+        run: flutter build apk --release --no-pub
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: StarIsle-release-apk
+          path: ${{ steps.locate.outputs.project_dir }}/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
+      - name: Build summary
+        if: success()
+        run: |
+          {
+            echo "## 星屿 APK 构建成功"
+            echo ""
+            echo "请在本次运行页面底部 **Artifacts** 区域下载 StarIsle-release-apk。"
+            echo ""
+            echo "> 此 APK 使用 CI 自动生成的 debug 签名，适合个人安装测试。若要长期覆盖更新，请配置固定 release keystore。"
+          } >> "$GITHUB_STEP_SUMMARY"
