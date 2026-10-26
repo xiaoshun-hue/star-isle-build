@@ -13,7 +13,7 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.5'
@@ -25,6 +25,10 @@ jobs:
           fi
           test -f star_isle/pubspec.yaml
           chmod +x star_isle/android/gradlew
+          sed -i 's/compileSdk = 34/compileSdk = 35/' star_isle/android/app/build.gradle
+          if ! grep -q 'suppressUnsupportedCompileSdk' star_isle/android/gradle.properties; then
+            echo 'android.suppressUnsupportedCompileSdk=35' >> star_isle/android/gradle.properties
+          fi
       - name: Build APK
         working-directory: star_isle
         run: |
