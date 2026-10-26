@@ -13,7 +13,7 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.35.0'
@@ -25,12 +25,13 @@ jobs:
           fi
           test -f star_isle/pubspec.yaml
           chmod +x star_isle/android/gradlew
-          sed -i 's/compileSdk = 34/compileSdk = 35/' star_isle/android/app/build.gradle
+          sed -i -E 's/compileSdk = (34|35)/compileSdk = 36/' star_isle/android/app/build.gradle
           sed -i '/postSplashScreenTheme/d' star_isle/android/app/src/main/res/values-v31/styles.xml star_isle/android/app/src/main/res/values-night-v31/styles.xml
           sed -i 's/^  path: 1.9.0$/  path: ^1.9.1/' star_isle/pubspec.yaml
-          if ! grep -q 'suppressUnsupportedCompileSdk' star_isle/android/gradle.properties; then
-            echo 'android.suppressUnsupportedCompileSdk=35' >> star_isle/android/gradle.properties
-          fi
+          sed -i 's/version "8.3.2"/version "8.9.1"/' star_isle/android/settings.gradle
+          sed -i 's/version "1.9.22"/version "2.1.0"/' star_isle/android/settings.gradle
+          sed -i 's/gradle-8.4-bin.zip/gradle-8.11.1-bin.zip/' star_isle/android/gradle/wrapper/gradle-wrapper.properties
+          sed -i '/suppressUnsupportedCompileSdk/d' star_isle/android/gradle.properties
       - name: Build APK
         working-directory: star_isle
         run: |
